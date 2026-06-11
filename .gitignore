@@ -1,0 +1,61 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+env/
+venv/
+.venv/
+.env
+
+# Outputs (generated files — don't commit report or cleaned CSV)
+outputs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Data (don't commit raw data files)
+data/*.csv
+!data/sample.csv
+
+# Virtual Environment
+venv/
+
+# Python Cache
+__pycache__/
+*.pyc
+
+# Reports
+outputs/
+*.html
+
+# Temporary Files
+.tmp_python_packages/
+
+# Backup Folders
+backup_v1/
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+
+.tmp_python_packages/
