@@ -13,7 +13,7 @@ DataForge is a self-hosted lead list cleaning tool. It takes a raw CSV of leads 
 
 No AI. No external APIs. No accounts. Fully deterministic and explainable.
 
-**[Live Demo →](https://dataforge.onrender.com)** · **[API Docs →](https://dataforge.onrender.com/docs)**
+**[Live Demo →](https://dataforge-kcvd.onrender.com)** · **[API Docs →](https://dataforge-kcvd.onrender.com/docs)**
 
 ---
 
@@ -172,7 +172,7 @@ See the [Render deployment guide](https://render.com/docs/deploy-fastapi) for st
 Health check. Used by Render for automatic health monitoring.
 
 ```bash
-curl https://dataforge.onrender.com/health
+curl https://dataforge-kcvd.onrender.com/health
 ```
 
 ```json
@@ -184,7 +184,7 @@ curl https://dataforge.onrender.com/health
 Upload a CSV and receive a ZIP with processed results.
 
 ```bash
-curl -X POST https://dataforge.onrender.com/process \
+curl -X POST https://dataforge-kcvd.onrender.com/process \
   -F "file=@leads.csv" \
   -o dataforge_results.zip
 ```
