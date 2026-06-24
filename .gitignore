@@ -9,12 +9,14 @@ __pycache__/
 dist/
 build/
 .eggs/
+
+# Virtual Environment
 env/
 venv/
 .venv/
 .env
 
-# Outputs (generated files — don't commit report or cleaned CSV)
+# Outputs (generated reports — don't commit)
 outputs/
 
 # OS
@@ -36,16 +38,10 @@ htmlcov/
 data/*.csv
 !data/sample.csv
 
-# Virtual Environment
-venv/
-
-# Python Cache
-__pycache__/
-*.pyc
-
-# Reports
-outputs/
-*.html
+# Generated HTML reports (from legacy maincsv.py)
+# Scoped to outputs/ and root — never match static/
+/report.html
+/outputs/*.html
 
 # Temporary Files
 .tmp_python_packages/
@@ -53,9 +49,5 @@ outputs/
 # Backup Folders
 backup_v1/
 
-# OS Files
-.DS_Store
-Thumbs.db
-
-
-.tmp_python_packages/
+# Cursor
+.cursor/

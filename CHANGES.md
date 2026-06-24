@@ -1,6 +1,103 @@
-# Summary of changes (csv-data-quality-pipeline)
+# Changelog
 
-This document lists edits made to align the CLI, pipeline, config, reporting, and quality checks. Paths are relative to the project root: `C:\Users\piyus\csv-data-quality-pipeline`.
+---
+
+## v0.1.0 — Lead List Scrubber MVP (2026-06-20)
+
+First release. Transforms raw CSV lead lists into CRM-ready datasets through a four-stage processing pipeline with a web interface.
+
+### New Modules
+
+#### DF-001: Semantic Recognition (`src/core/semantic_profiler.py`)
+
+- Auto-detects column types: email, phone_number, full_name, first_name, last_name, company_name, url, linkedin_profile
+- Evaluate-all-then-pick-highest scoring architecture (v1.2)
+- Confidence-based selection with priority tiebreaking
+- Minimum 3 non-null values threshold to prevent false positives
+- Explainability: every detection includes `confidence`, `detector`, and `reason` fields
+- Header-name boosting for ambiguous columns
+
+#### DF-002: CRM Formatter (`src/core/crm_formatter.py`)
+
+- Title Case normalization for name fields
+- Lowercase normalization for email fields
+- Whitespace trimming across all detected fields
+- Full name splitting: "John Smith" → first_name: "John", last_name: "Smith"
+- Transformation report with per-field counts
+
+#### DF-003: Email Validator (`src/core/validators.py`)
+
+- Regex-based email format validation
+- Blank/None/NaN email rejection
+- Role-based email flagging (info@, sales@, support@, etc.)
+- Per-row rejection reasons (`INVALID_EMAIL_FORMAT`, `BLANK_EMAIL`)
+- Splits DataFrame into valid and rejected sets
+- Configurable: disable blank rejection, role flagging, or strict validation
+
+#### DF-004: Smart Deduplicator (`src/core/deduplicator.py`)
+
+- Exact row deduplication (all columns identical)
+- Email-based deduplication (case-insensitive)
+- Completeness scoring: retains the row with the most non-null fields
+- Blank emails never grouped as duplicates (unique sentinels)
+- Stateless design: no global counters, safe for concurrent server requests
+
+#### INT-001: Processing Pipeline (`src/core/pipeline.py`)
+
+- Orchestrates all four modules in sequence
+- Re-profiles after CRM formatting (name splitting changes schema)
+- Each step independently toggleable via config
+- Strict input validation: empty DataFrame raises ValueError, non-DataFrame raises TypeError
+- Unified report combining sub-reports from every stage
+
+#### WEB-001: FastAPI Backend (`server.py`)
+
+- `GET /health` — Health check
+- `POST /process` — CSV upload → ZIP response (multipart/form-data)
+- `GET /` — Serve frontend
+- `GET /docs` — Swagger UI
+- In-memory ZIP generation via BytesIO (no disk writes)
+- CORS middleware for frontend dev
+- File size limit: 25MB
+- Error responses: 400 (client errors), 500 (processing failures), no tracebacks exposed
+
+#### WEB-002: Single-Page Frontend (`static/`)
+
+- Drag-and-drop CSV upload with visual feedback
+- Client-side file validation (extension, size)
+- Processing spinner with status text
+- In-browser ZIP parsing to extract report.json for stats display
+- Animated counters (Rows Processed / Rejected / Retained)
+- Download trigger for dataforge_results.zip
+- Dark-mode design system with Inter typography
+- Responsive layout (mobile-friendly)
+- SVG favicon
+
+### QA & Fixes
+
+- QA audit: 88 end-to-end test scenarios, all passing
+- Fixed global `_blank_counter` state leak in deduplicator (M2)
+- Added missing dependencies to requirements.txt (L3)
+- Added favicon to frontend (L1)
+
+### Documentation
+
+- Complete README.md rewrite for Lead List Scrubber
+- Updated architecture diagram and project structure
+- Fixed requirements.txt version drift (pinned to tested runtime versions)
+- Scoped .gitignore rules to never exclude static/ frontend files
+- Updated CHANGES.md with full module history
+
+### Test Coverage
+
+- 179 automated tests across 7 test files
+- All tests passing on Python 3.13, pandas 2.3.3, FastAPI 0.137.1
+
+---
+
+## Legacy Pipeline Changes
+
+The following changes were made to the original CSV audit/profiling pipeline prior to the Lead List Scrubber work.
 
 ---
 

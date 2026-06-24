@@ -2,100 +2,94 @@
 
 ![Python](https://img.shields.io/badge/Python-3.10+-blue)
 ![Status](https://img.shields.io/badge/Status-Active-green)
-![Version](https://img.shields.io/badge/Version-v1.0.0-orange)
+![Version](https://img.shields.io/badge/Version-v0.1.0-orange)
+![Tests](https://img.shields.io/badge/Tests-179%20passing-brightgreen)
 
-> Transform raw CSV data into trusted, audit-ready datasets.
+> Upload a messy lead list. Download a CRM-ready file.
 
-DataForge is a modular data quality and profiling engine for CSV datasets. It audits tabular data, detects common quality issues, applies configurable cleaning strategies, and generates self-contained HTML audit reports that can be shared with analysts, engineers, and stakeholders.
+DataForge is a self-hosted lead list cleaning tool. It takes a raw CSV of leads — with messy names, invalid emails, duplicates, and inconsistent formatting — and produces a CRM-ready dataset in seconds.
 
-Status: active development  
-Language: Python  
-Primary interface: command line  
-Primary output: HTML audit report
+No AI. No external APIs. No accounts. Fully deterministic and explainable.
+
+Status: v0.1.0 MVP
+Language: Python
+Primary interface: Web browser
+Backend: FastAPI
+Frontend: Vanilla HTML/CSS/JS
 
 ---
 
-## Problem Statement
+## What It Does
 
-CSV files are still the default exchange format for operational data, analytics exports, model inputs, and ad hoc reporting. They are also fragile.
+| Step | Module | What Happens |
+|:---|:---|:---|
+| 1 | Semantic Recognition | Auto-detects column types: email, name, phone, company, URL, LinkedIn |
+| 2 | CRM Formatting | Title-cases names, lowercases emails, trims whitespace, splits full names |
+| 3 | Email Validation | Rejects invalid emails, flags role-based addresses (info@, sales@) |
+| 4 | Deduplication | Removes exact and email-based duplicates, keeps the most complete record |
 
-Real-world CSV datasets often contain:
+**Output:** A ZIP containing three files:
 
-- Missing values hidden across important columns
-- Duplicate rows that distort analysis
-- Constant or low-value columns
-- Incorrectly typed values stored as strings
-- Outliers that skew metrics and models
-- Unknown encodings or delimiters
-- Data quality problems discovered too late in the workflow
+| File | Contents |
+|:---|:---|
+| `crm_ready.csv` | Cleaned, validated, deduplicated leads |
+| `rejected_leads.csv` | Invalid leads with rejection reasons |
+| `report.json` | Processing statistics from every stage |
 
-Manual inspection does not scale, and one-off cleanup scripts are hard to reuse or audit.
+---
 
-## Solution
-
-DataForge provides a repeatable pipeline for turning raw CSV input into a quality report and a cleaner dataset.
-
-It loads a CSV safely, profiles each column, runs quality checks, computes a quality score, recommends fixes, applies automated cleaning rules, coerces obvious data types, and writes a structured HTML report.
-
-The project is designed as a modular engine rather than a single script. Each stage has a clear responsibility, making it easier to extend, test, and integrate into future APIs or applications.
-
-## Key Features
-
-- CSV loading with encoding detection
-- Delimiter detection for comma, semicolon, tab, and pipe-separated files
-- Column profiling with inferred types, null counts, unique counts, and numeric statistics
-- Missing value detection with warning and critical severity levels
-- Duplicate row detection
-- Constant column detection
-- High-cardinality category detection
-- IQR-based numeric outlier detection
-- Dataset quality score from 0 to 100
-- Actionable suggestions for data cleanup
-- Automated cleaning for weak columns and missing values
-- Type coercion for numeric, datetime, and boolean-like string columns
-- Self-contained HTML audit report
-- Command-line interface with quiet, verbose, custom output, and save-clean options
-- Configurable thresholds and strategies
-
-## Architecture Diagram
+## Architecture
 
 ```text
-                         +------------------+
-                         |   CSV Dataset    |
-                         +---------+--------+
-                                   |
-                                   v
-+------------------+     +---------+--------+     +------------------+
-| Command Line UI  +---->|      Loader      +---->|    Profiler      |
-|   maincsv.py     |     | encoding, sep    |     | column stats     |
-+------------------+     +---------+--------+     +---------+--------+
-                                   |                        |
-                                   v                        v
-                         +---------+--------+     +---------+--------+
-                         |  Quality Checks  |     | Quality Scorer   |
-                         | missing, dupes   |     | score + grade    |
-                         +---------+--------+     +---------+--------+
-                                   |                        |
-                                   v                        v
-                         +---------+--------+     +---------+--------+
-                         | Suggestions      |     | Cleaner          |
-                         | fix guidance     |     | filter + impute  |
-                         +---------+--------+     +---------+--------+
-                                                            |
-                                                            v
-                                                  +---------+--------+
-                                                  | Type Coercer     |
-                                                  | numeric/date/bool|
-                                                  +---------+--------+
-                                                            |
-                                                            v
-                                                  +---------+--------+
-                                                  | HTML Reporter    |
-                                                  | audit report     |
-                                                  +------------------+
+                    Browser (localhost:8000)
+                           │
+                    ┌──────┴──────┐
+                    │  Frontend   │  static/index.html
+                    │  (Vanilla)  │  static/style.css
+                    │             │  static/app.js
+                    └──────┬──────┘
+                           │ POST /process (multipart CSV)
+                           ▼
+                    ┌──────────────┐
+                    │   FastAPI    │  server.py
+                    │   Backend   │
+                    └──────┬──────┘
+                           │
+                           ▼
+              ┌────────────────────────┐
+              │   Processing Pipeline  │  src/core/pipeline.py
+              └────────────┬───────────┘
+                           │
+          ┌────────────────┼────────────────┐
+          ▼                ▼                ▼
+   ┌─────────────┐ ┌─────────────┐ ┌──────────────┐
+   │  Semantic   │ │    CRM      │ │    Email     │
+   │  Profiler   │ │  Formatter  │ │  Validator   │
+   │  DF-001     │ │  DF-002     │ │  DF-003      │
+   └─────────────┘ └─────────────┘ └──────────────┘
+                                          │
+                                          ▼
+                                   ┌──────────────┐
+                                   │ Deduplicator │
+                                   │   DF-004     │
+                                   └──────┬───────┘
+                                          │
+                                          ▼
+                                    ZIP Response
+                                   (3 CSV/JSON files)
 ```
 
-## Installation
+**Pipeline flow:**
+
+```text
+Input CSV → Semantic Recognition → CRM Formatting → Re-profile
+         → Email Validation (split: valid + rejected)
+         → Deduplication (on valid only) → ZIP package → Response
+```
+
+---
+
+## Quick Start
 
 Clone the repository:
 
@@ -128,178 +122,220 @@ Install dependencies:
 pip install -r requirements.txt
 ```
 
-## Usage Examples
-
-Run an audit on the sample dataset:
+Start the server:
 
 ```bash
-python maincsv.py data/sample.csv
+uvicorn server:app --reload
 ```
 
-Generate a report at a custom path:
+Open your browser:
+
+```
+http://localhost:8000
+```
+
+Drop a CSV → click **Process Lead List** → download the ZIP.
+
+---
+
+## API Reference
+
+### GET /health
+
+Health check.
 
 ```bash
-python maincsv.py data/sample.csv --output outputs/customer_audit.html
+curl http://localhost:8000/health
 ```
 
-Save the cleaned dataset:
+```json
+{"status": "ok"}
+```
+
+### POST /process
+
+Upload a CSV and receive a ZIP with processed results.
 
 ```bash
-python maincsv.py data/sample.csv --save-clean outputs/cleaned_data.csv
+curl -X POST http://localhost:8000/process \
+  -F "file=@leads.csv" \
+  -o dataforge_results.zip
 ```
 
-Skip automated cleaning and only audit/profile the dataset:
+**Responses:**
 
-```bash
-python maincsv.py data/sample.csv --skip-clean
-```
+| Code | Condition |
+|:---|:---|
+| 200 | Success — returns ZIP |
+| 400 | No file / wrong extension / empty CSV / parse failure |
+| 500 | Processing failure |
 
-Show a full column breakdown in the terminal:
+### GET /docs
 
-```bash
-python maincsv.py data/sample.csv --verbose
-```
+Interactive Swagger UI (auto-generated by FastAPI).
 
-Only print the final summary:
+---
 
-```bash
-python maincsv.py data/sample.csv --quiet
-```
+## Python API
 
-Use the pipeline from Python:
+Use the engine directly without the web server:
 
 ```python
-from src.pipeline.pipeline import run_pipeline
+import pandas as pd
+from src.core import process_lead_list
 
-result = run_pipeline(
-    filepath="data/sample.csv",
-    output_path="outputs/report.html",
-    save_clean="outputs/cleaned_data.csv",
+df = pd.read_csv("leads.csv")
+result = process_lead_list(df)
+
+crm_ready = result["crm_ready_df"]      # Cleaned leads
+rejected  = result["rejected_df"]        # Invalid leads with reasons
+report    = result["report"]             # Processing statistics
+```
+
+Individual modules can also be used standalone:
+
+```python
+from src.core import (
+    semantic_profile_dataframe,  # DF-001
+    format_for_crm,              # DF-002
+    validate_leads,              # DF-003
+    deduplicate_leads,           # DF-004
 )
-
-if result["success"]:
-    print(result["summary"])
-else:
-    print(result["error"])
 ```
 
-## Sample Output
+---
 
-Terminal output:
+## Design Principles
 
-```text
-======================================================
-   DataForge
-   Transform Raw Data into Trusted Data
-======================================================
+- **Deterministic** — Same input always produces the same output
+- **Explainable** — Every rejection and detection includes a reason
+- **No AI / No LLMs** — Pure regex and rule-based logic
+- **No external APIs** — Runs entirely offline, no SMTP/DNS lookups
+- **Safe** — No data loss; rejected rows are preserved with reasons
+- **No disk writes** — All processing happens in memory
 
-   File: data/sample.csv
-
-  [1/5] Loading...
-         Rows      : 5
-         Columns   : 3
-         Encoding  : utf-8
-         Delimiter : ','
-
-  [2/5] Profiling...
-         Profiled  : 3 columns
-         (use --verbose to see full column breakdown)
-
-  [3/5] Quality Checks...
-         Total     : 3
-         Critical  : 2
-         Warnings  : 1
-         Info      : 0
-
-  [4/5] Cleaning...
-         - age: filled_median
-         - salary: filled_median
-
-  [5/5] Report...
-         Saved to  : C:\path\to\csv-data-quality-pipeline\outputs\report.html
-
-======================================================
-   Done
-======================================================
-   Report     : C:\path\to\csv-data-quality-pipeline\outputs\report.html
-   Final shape: 5 rows x 3 cols
-======================================================
-```
-
-The HTML report includes:
-
-- Dataset overview
-- Quality score and grade
-- Severity counts
-- Column profile table
-- Quality issues
-- Suggested actions
-- Cleaning summary
-- Type coercion summary
-
-## Screenshots
-
-### CLI Execution
-![CLI Execution](docs/images/cli-demo.png)
-
-### HTML Report Overview
-![Report Overview](docs/images/report-demo1.png)
-
-### Dataset Overview
-![Dataset Overview](docs/images/report-demo2.png)
-
-### Quality Issues
-![Quality Issues](docs/images/report-demo3.png)
-
-### Cleaning Summary
-![Cleaning Summary](docs/images/report-demo4.png)
-
-## Roadmap
-
-- Stabilize the public pipeline API
-- Add automated test coverage for each pipeline stage
-- Expand report templates and visual summaries
-- Add JSON export for machine-readable audit results
-- Add support for batch processing multiple CSV files
-- Package the project for easier installation
-- Add configuration files for custom project-level rules
-- Provide richer documentation and examples
-
-## Future Improvements
-
-- Schema validation with expected column names and data types
-- Custom validation rules for business-specific checks
-- More advanced outlier handling strategies
-- Data drift comparison between two CSV snapshots
-- Integration with databases and cloud object storage
-- Web interface for uploading datasets and viewing reports
-- API service for automated data quality checks in pipelines
-- CI integration for validating datasets before release
-- Better logging and observability for production workflows
+---
 
 ## Project Structure
 
 ```text
 csv-data-quality-pipeline/
-|-- data/
-|   `-- sample.csv         sample CSV dataset
-|-- docs/
-|   `-- images/            README screenshots and report previews
-|-- outputs/               generated reports and cleaned data
-|-- src/
-|   |-- cli/               command-line interface
-|   |-- core/              loader, profiler, quality checks, cleaner, reporter
-|   |-- pipeline/          orchestration layer
-|   |-- utils/             shared config and exceptions
-|   `-- config.py          stable configuration import path
-|-- tests/                 test suite
-|-- maincsv.py             CLI entry point
-|-- requirements.txt       Python dependencies
-`-- README.md
+├── server.py                  FastAPI backend (WEB-001)
+├── static/
+│   ├── index.html             Single-page frontend (WEB-002)
+│   ├── style.css              Dark-mode design system
+│   └── app.js                 Upload, ZIP parsing, download logic
+├── src/
+│   └── core/
+│       ├── __init__.py        Public API exports
+│       ├── semantic_profiler.py   DF-001: Column type detection
+│       ├── crm_formatter.py       DF-002: CRM formatting engine
+│       ├── validators.py          DF-003: Email validation engine
+│       ├── deduplicator.py        DF-004: Deduplication engine
+│       ├── pipeline.py            INT-001: Processing orchestrator
+│       ├── loader.py              CSV loading (legacy)
+│       ├── profiler.py            Column profiling (legacy)
+│       ├── quality.py             Quality checks (legacy)
+│       ├── quality_scorer.py      Quality scoring (legacy)
+│       ├── cleaner.py             Data cleaning (legacy)
+│       ├── suggestions_engine.py  Fix suggestions (legacy)
+│       ├── type_coercer.py        Type coercion (legacy)
+│       └── reporter.py            HTML report generator (legacy)
+├── tests/
+│   ├── test_semantic_profiler.py  25 tests
+│   ├── test_crm_formatter.py      31 tests
+│   ├── test_validators.py         39 tests
+│   ├── test_deduplicator.py       35 tests
+│   ├── test_pipeline.py           28 tests
+│   └── test_api.py                25 tests (183 total)
+├── data/
+│   └── sample.csv             Sample dataset
+├── maincsv.py                 Legacy CLI entry point
+├── requirements.txt           Python dependencies
+├── CHANGES.md                 Changelog
+└── README.md
 ```
+
+> **Note:** Files marked "(legacy)" are from the original CSV audit pipeline. They remain functional but are not part of the Lead List Scrubber workflow.
+
+---
+
+## Test Coverage
+
+```bash
+python -m pytest tests/ -v
+```
+
+| Suite | Tests | Coverage |
+|:---|:---:|:---|
+| DF-001 Semantic Profiler | 25 | Type detection, confidence, edge cases |
+| DF-002 CRM Formatter | 31 | Title case, email normalization, name splitting |
+| DF-003 Email Validator | 39 | Regex validation, blank/role detection, config |
+| DF-004 Deduplicator | 35 | Exact/email dedup, completeness scoring |
+| INT-001 Pipeline | 28 | End-to-end flow, config overrides, edge cases |
+| WEB-001 FastAPI API | 25 | Endpoints, error handling, ZIP contents |
+| **Total** | **183** | |
+
+---
+
+## Configuration
+
+The pipeline accepts optional config dicts to control behavior:
+
+```python
+result = process_lead_list(df, config={
+    "run_formatting": True,       # Enable/disable CRM formatting
+    "run_validation": True,       # Enable/disable email validation
+    "run_deduplication": True,    # Enable/disable deduplication
+})
+```
+
+Server constants in `server.py`:
+
+```python
+MAX_UPLOAD_SIZE_MB = 25
+SUPPORTED_EXTENSIONS = [".csv"]
+```
+
+---
+
+## Known Limitations
+
+- **Minimum 3 rows required** for semantic type detection. Datasets with 1–2 rows will pass through unmodified.
+- **No fuzzy matching** in deduplication. Only exact and email-based dedup.
+- **No SMTP/DNS validation** of email addresses. Validation is regex-based.
+- **Synchronous processing.** Large files block the request thread.
+- **No authentication.** Intended for local/trusted network use.
+
+---
+
+## Roadmap
+
+- [ ] Upload progress bar for large files
+- [ ] In-browser preview of cleaned data before download
+- [ ] Configurable validation rules via UI
+- [ ] Batch processing (multiple CSVs)
+- [ ] Export to Google Sheets / HubSpot format
+- [ ] Docker image for one-command deployment
+
+---
+
+## Legacy CSV Audit Tool
+
+The original `maincsv.py` CLI tool for CSV profiling and quality auditing remains in the codebase. To use it:
+
+```bash
+python maincsv.py data/sample.csv
+```
+
+This generates an HTML audit report at `outputs/report.html`. See [CHANGES.md](CHANGES.md) for the history of that tool.
+
+---
 
 ## Contributing
 
-Contributions are welcome. Good first areas to improve include tests, documentation, report styling, additional quality checks, and packaging.
+Contributions are welcome. Before opening a pull request:
 
-Before opening a pull request, run the CLI against `data/sample.csv` and confirm that the generated report still renders correctly.
+1. Run the full test suite: `python -m pytest tests/ -v`
+2. Verify the server starts: `uvicorn server:app --reload`
+3. Test a CSV upload through the browser at `http://localhost:8000`
