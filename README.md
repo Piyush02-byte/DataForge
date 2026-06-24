@@ -1,9 +1,11 @@
 # DataForge
 
-![Python](https://img.shields.io/badge/Python-3.10+-blue)
+![Python](https://img.shields.io/badge/Python-3.13-blue)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.137-009688)
 ![Status](https://img.shields.io/badge/Status-Active-green)
 ![Version](https://img.shields.io/badge/Version-v0.1.0-orange)
 ![Tests](https://img.shields.io/badge/Tests-179%20passing-brightgreen)
+![License](https://img.shields.io/badge/License-MIT-yellow)
 
 > Upload a messy lead list. Download a CRM-ready file.
 
@@ -11,11 +13,19 @@ DataForge is a self-hosted lead list cleaning tool. It takes a raw CSV of leads 
 
 No AI. No external APIs. No accounts. Fully deterministic and explainable.
 
-Status: v0.1.0 MVP
-Language: Python
-Primary interface: Web browser
-Backend: FastAPI
-Frontend: Vanilla HTML/CSS/JS
+**[Live Demo →](https://dataforge.onrender.com)** · **[API Docs →](https://dataforge.onrender.com/docs)**
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|:---|:---|
+| Backend | Python 3.13 · FastAPI · Uvicorn |
+| Frontend | Vanilla HTML · CSS · JavaScript |
+| Processing | Pandas · Regex-based NLP |
+| Testing | Pytest (179 tests) |
+| Deployment | Render (Web Service) |
 
 ---
 
@@ -94,8 +104,8 @@ Input CSV → Semantic Recognition → CRM Formatting → Re-profile
 Clone the repository:
 
 ```bash
-git clone <repository-url>
-cd csv-data-quality-pipeline
+git clone https://github.com/Piyush02-byte/DataForge.git
+cd DataForge
 ```
 
 Create and activate a virtual environment:
@@ -138,14 +148,31 @@ Drop a CSV → click **Process Lead List** → download the ZIP.
 
 ---
 
+## Deployment (Render)
+
+DataForge deploys as a Render Web Service with zero configuration files needed.
+
+| Setting | Value |
+|:---|:---|
+| **Build Command** | `pip install -r requirements.txt` |
+| **Start Command** | `uvicorn server:app --host 0.0.0.0 --port $PORT` |
+| **Runtime** | Python 3 |
+| **Plan** | Free |
+
+No environment variables, no database, no Docker required.
+
+See the [Render deployment guide](https://render.com/docs/deploy-fastapi) for step-by-step instructions.
+
+---
+
 ## API Reference
 
 ### GET /health
 
-Health check.
+Health check. Used by Render for automatic health monitoring.
 
 ```bash
-curl http://localhost:8000/health
+curl https://dataforge.onrender.com/health
 ```
 
 ```json
@@ -157,7 +184,7 @@ curl http://localhost:8000/health
 Upload a CSV and receive a ZIP with processed results.
 
 ```bash
-curl -X POST http://localhost:8000/process \
+curl -X POST https://dataforge.onrender.com/process \
   -F "file=@leads.csv" \
   -o dataforge_results.zip
 ```
@@ -219,44 +246,48 @@ from src.core import (
 ## Project Structure
 
 ```text
-csv-data-quality-pipeline/
-├── server.py                  FastAPI backend (WEB-001)
+DataForge/
+├── server.py                      FastAPI backend (WEB-001)
 ├── static/
-│   ├── index.html             Single-page frontend (WEB-002)
-│   ├── style.css              Dark-mode design system
-│   └── app.js                 Upload, ZIP parsing, download logic
+│   ├── index.html                 Single-page frontend (WEB-002)
+│   ├── style.css                  Dark-mode design system
+│   └── app.js                     Upload, ZIP parsing, download logic
 ├── src/
-│   └── core/
-│       ├── __init__.py        Public API exports
-│       ├── semantic_profiler.py   DF-001: Column type detection
-│       ├── crm_formatter.py       DF-002: CRM formatting engine
-│       ├── validators.py          DF-003: Email validation engine
-│       ├── deduplicator.py        DF-004: Deduplication engine
-│       ├── pipeline.py            INT-001: Processing orchestrator
-│       ├── loader.py              CSV loading (legacy)
-│       ├── profiler.py            Column profiling (legacy)
-│       ├── quality.py             Quality checks (legacy)
-│       ├── quality_scorer.py      Quality scoring (legacy)
-│       ├── cleaner.py             Data cleaning (legacy)
-│       ├── suggestions_engine.py  Fix suggestions (legacy)
-│       ├── type_coercer.py        Type coercion (legacy)
-│       └── reporter.py            HTML report generator (legacy)
+│   ├── core/
+│   │   ├── __init__.py            Public API exports
+│   │   ├── semantic_profiler.py   DF-001: Column type detection
+│   │   ├── crm_formatter.py       DF-002: CRM formatting engine
+│   │   ├── validators.py          DF-003: Email validation engine
+│   │   ├── deduplicator.py        DF-004: Deduplication engine
+│   │   ├── pipeline.py            INT-001: Processing orchestrator
+│   │   ├── loader.py              CSV loading
+│   │   ├── profiler.py            Column profiling
+│   │   ├── quality.py             Quality checks
+│   │   ├── quality_scorer.py      Quality scoring
+│   │   ├── cleaner.py             Data cleaning
+│   │   ├── suggestions_engine.py  Fix suggestions
+│   │   ├── type_coercer.py        Type coercion
+│   │   └── reporter.py            HTML report generator
+│   ├── cli/                       CLI interface (maincsv.py)
+│   ├── pipeline/                  Legacy orchestration
+│   ├── utils/                     Config and exceptions
+│   └── config.py                  Configuration re-exports
 ├── tests/
 │   ├── test_semantic_profiler.py  25 tests
 │   ├── test_crm_formatter.py      31 tests
 │   ├── test_validators.py         39 tests
-│   ├── test_deduplicator.py       35 tests
-│   ├── test_pipeline.py           28 tests
-│   └── test_api.py                25 tests (183 total)
+│   ├── test_deduplicator.py       32 tests
+│   ├── test_pipeline.py           29 tests
+│   └── test_api.py                23 tests
+├── codex/                         Technical design documents
 ├── data/
-│   └── sample.csv             Sample dataset
-├── maincsv.py                 Legacy CLI entry point
-├── requirements.txt           Python dependencies
-├── CHANGES.md                 Changelog
+│   └── sample.csv                 Sample dataset
+├── docs/                          Documentation assets
+├── maincsv.py                     Legacy CLI entry point
+├── requirements.txt               Python dependencies
+├── CHANGES.md                     Changelog
 └── README.md
 ```
-
-> **Note:** Files marked "(legacy)" are from the original CSV audit pipeline. They remain functional but are not part of the Lead List Scrubber workflow.
 
 ---
 
@@ -271,10 +302,10 @@ python -m pytest tests/ -v
 | DF-001 Semantic Profiler | 25 | Type detection, confidence, edge cases |
 | DF-002 CRM Formatter | 31 | Title case, email normalization, name splitting |
 | DF-003 Email Validator | 39 | Regex validation, blank/role detection, config |
-| DF-004 Deduplicator | 35 | Exact/email dedup, completeness scoring |
-| INT-001 Pipeline | 28 | End-to-end flow, config overrides, edge cases |
-| WEB-001 FastAPI API | 25 | Endpoints, error handling, ZIP contents |
-| **Total** | **183** | |
+| DF-004 Deduplicator | 32 | Exact/email dedup, completeness scoring |
+| INT-001 Pipeline | 29 | End-to-end flow, config overrides, edge cases |
+| WEB-001 FastAPI API | 23 | Endpoints, error handling, ZIP contents |
+| **Total** | **179** | |
 
 ---
 
@@ -301,7 +332,7 @@ SUPPORTED_EXTENSIONS = [".csv"]
 
 ## Known Limitations
 
-- **Minimum 3 rows required** for semantic type detection. Datasets with 1–2 rows will pass through unmodified.
+- **Minimum 3 rows required** for semantic type detection. Datasets with 1–2 rows pass through unmodified.
 - **No fuzzy matching** in deduplication. Only exact and email-based dedup.
 - **No SMTP/DNS validation** of email addresses. Validation is regex-based.
 - **Synchronous processing.** Large files block the request thread.
@@ -317,6 +348,7 @@ SUPPORTED_EXTENSIONS = [".csv"]
 - [ ] Batch processing (multiple CSVs)
 - [ ] Export to Google Sheets / HubSpot format
 - [ ] Docker image for one-command deployment
+- [ ] CI/CD pipeline with automated testing
 
 ---
 
@@ -339,3 +371,9 @@ Contributions are welcome. Before opening a pull request:
 1. Run the full test suite: `python -m pytest tests/ -v`
 2. Verify the server starts: `uvicorn server:app --reload`
 3. Test a CSV upload through the browser at `http://localhost:8000`
+
+---
+
+## License
+
+MIT
